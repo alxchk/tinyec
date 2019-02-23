@@ -34,24 +34,9 @@ class TestPoint(unittest.TestCase):
         p2 = ec.Point(self.curve, 96, 0)
         self.assertEqual(ec.Point(self.curve, 38, 90), p1 + p2)
 
-    def test_when_point_is_not_on_curve_then_warning_is_raised(self):
-        import warnings
-        p1 = ec.Point(self.curve, 22, 5)
-        with warnings.catch_warnings():
-            warnings.filterwarnings("error")
-            with self.assertRaises(UserWarning):
-                ec.Point(self.curve, 94, 31)
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore")
-            p2 = ec.Point(self.curve, 94, 31)
-        with warnings.catch_warnings():
-            warnings.filterwarnings("error")
-            with self.assertRaises(UserWarning):
-                p1 + p2
-
     def test_when_point_is_added_to_infinity_then_point_is_returned(self):
         p1 = ec.Point(self.curve, 22, 5)
-        p2 = ec.Inf(self.curve)
+        p2 = ec.Point(self.curve)
         self.assertEqual(p1, p1 + p2)
         self.assertEqual(p1, p2 + p1)
 
@@ -62,11 +47,11 @@ class TestPoint(unittest.TestCase):
     def test_when_points_have_opposite_ordinates_then_result_is_infinite(self):
         p1 = ec.Point(self.curve, 12, 3)
         p2 = ec.Point(self.curve, 12, 94)
-        self.assertEqual(ec.Inf(self.curve), p1 + p2)
+        self.assertEqual(ec.Point(self.curve), p1 + p2)
 
     def test_when_point_is_substracted_from_infinity_then_point_is_returned(self):
         p1 = ec.Point(self.curve, 22, 5)
-        p2 = ec.Inf(self.curve)
+        p2 = ec.Point(self.curve)
         self.assertEqual(p1, p1 - p2)
         self.assertEqual(p1, p2 - p1)
 
@@ -80,10 +65,10 @@ class TestPoint(unittest.TestCase):
     def test_when_point_is_scalar_multiplied_then_point_is_in_subgroup(self):
         p1 = ec.Point(self.curve, 3, 6)
         self.assertEqual(ec.Point(self.curve, 3, 6), p1 * 1)
-        self.assertEqual(ec.Point(self.curve, 80, 10), 2 * p1 * 1)
-        self.assertEqual(ec.Point(self.curve, 3, 91), 2 * p1 * 2)
+        self.assertEqual(ec.Point(self.curve, 80, 10), (p1 * 2) * 1)
+        self.assertEqual(ec.Point(self.curve, 3, 91), (p1 * 2) * 2)
         self.assertEqual(ec.Point(self.curve, 80, 10), p1 * -3)
-        self.assertEqual(ec.Inf(self.curve), p1 * 10)
+        self.assertEqual(ec.Point(self.curve), p1 * 10)
 
     def test_when_point_is_not_multiplied_by_an_int_then_error_is_raised(self):
         p1 = ec.Point(self.curve, 3, 6)
