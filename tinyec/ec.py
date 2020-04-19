@@ -1,6 +1,26 @@
 # -*- coding: utf-8 -*-
 import random
 import math
+import sys
+
+if sys.version_info.major > 2:
+    xrange = range
+
+    def to_bytes(value):
+        values = []
+        while value:
+            values.append(value % 256)
+            value = value >> 8
+        return bytes(values)
+
+else:
+    def to_bytes(value):
+        bytes = []
+        while value:
+            bytes.append(chr(value % 256))
+            value = value >> 8
+        return b''.join(bytes)
+
 
 _COMB_IDX = (
     3, 2, 1,
@@ -254,17 +274,11 @@ _COMB_IDX = (
 )
 
 
-def to_bytes(value):
-    bytes = []
-    while value:
-        bytes.append(chr(value % 256))
-        value = value >> 8
-    return ''.join(bytes)
-
-
 def from_bytes(bytes):
     return sum(
-        ord(byte) * (256**i) for i, byte in enumerate(bytes)
+        (
+            byte if isinstance(byte, int) else ord(byte)
+        ) * (256**i) for i, byte in enumerate(bytes)
     )
 
 
@@ -298,7 +312,7 @@ class Curve(object):
         self.a = a
         self.b = b
         self.field = field
-        self.bytes = (int(math.log(self.field.p, 2)) + 7) / 8
+        self.bytes = (int(math.log(self.field.p, 2)) + 7) // 8
         self.bits = self.bytes * 8
         self.g = Point(self, self.field.g[0], self.field.g[1])
 
@@ -314,6 +328,9 @@ class Curve(object):
         return \
             self.a == other.a and self.b == other.b and \
             self.field == other.field
+
+    def __hash__(self):
+        return hash((self.a, self.b, self.field, self.bits, self.g))
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -338,6 +355,9 @@ class SubGroup(object):
         return \
             self.p == other.p and self.g == other.g and \
             self.n == other.n and self.h == other.h
+
+    def __hash__(self):
+        return hash((self.p, self.g, self.n, self.h))
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -374,7 +394,7 @@ class Point(object):
     def precompute(self):
         items = 2**8
         pc = [None]*(items)
-        portion = self.curve.bits / 8
+        portion = self.curve.bits // 8
 
         pc[0] = Point(self.curve)
         pc[1] = self.copy()
@@ -427,6 +447,12 @@ class Point(object):
             return False
 
         return self.x == other.x and self.y == other.y
+
+    def __hash__(self):
+        return hash((
+            self.curve, self.x, self.y,
+            self.p, self.inf, self._pc
+        ))
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -504,7 +530,7 @@ class Point(object):
 
     def _comb(self, k):
         result = Point(self.curve)
-        portions = self.curve.bits / 8
+        portions = self.curve.bits // 8
 
         for d in xrange(portions-1, -1, -1):
             idx = 0
@@ -594,7 +620,7 @@ class ECDH(object):
 
 
 def lg(a, p):
-    ls = pow(a, (p - 1)/2, p)
+    ls = pow(a, (p - 1) // 2, p)
     if ls == p - 1:
         return -1
     return ls
